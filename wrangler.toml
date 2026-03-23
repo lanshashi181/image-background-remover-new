@@ -1,0 +1,11 @@
+# Cloudflare Pages 配置
+name = "image-background-remover-new"
+compatibility_date = "2026-03-23"
+
+# 静态资源配置
+[site]
+bucket = ".next"
+
+# 环境变量 - 在 Cloudflare Dashboard 中设置
+# [vars]
+# REMOVE_BG_API_KEY = "your_key_here"
