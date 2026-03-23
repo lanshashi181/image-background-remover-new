@@ -2,6 +2,9 @@
 
 import { useState, useCallback, useRef } from "react";
 
+// API Key - 生产环境应该通过环境变量或用户输入
+const REMOVE_BG_API_KEY = process.env.NEXT_PUBLIC_REMOVE_BG_API_KEY || "";
+
 export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,17 +43,31 @@ export default function Home() {
     setPreviewUrl(preview);
 
     try {
+      // 直接调用 Remove.bg API
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image_file", file, file.name);
+      formData.append("size", "auto");
 
-      const response = await fetch("/api/remove-bg", {
+      const response = await fetch("https://api.remove.bg/v1.0/removebg", {
         method: "POST",
+        headers: {
+          "X-Api-Key": REMOVE_BG_API_KEY,
+        },
         body: formData,
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "处理失败" }));
-        throw new Error(data.error || "处理失败");
+        const errorText = await response.text();
+        let errorMessage = "处理失败，请重试";
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.errors && errorJson.errors[0]) {
+            errorMessage = errorJson.errors[0].title || errorMessage;
+          }
+        } catch {
+          // Keep default message
+        }
+        throw new Error(errorMessage);
       }
 
       const blob = await response.blob();
@@ -185,7 +202,7 @@ export default function Home() {
                 {/* Result */}
                 <div className="text-center">
                   <p className="text-sm text-gray-500 mb-2">处理结果</p>
-                  <div 
+                  <div
                     className="bg-gray-100 rounded-xl p-4 min-h-[200px] flex items-center justify-center"
                     style={{
                       backgroundImage: "linear-gradient(45deg, #e5e5e5 25%, transparent 25%), linear-gradient(-45deg, #e5e5e5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e5e5 75%), linear-gradient(-45deg, transparent 75%, #e5e5e5 75%)",
